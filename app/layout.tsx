@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import {publicSupabaseConfig} from '@/lib/public-supabase-config';
+export const dynamic='force-dynamic';
 const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(base),
@@ -9,5 +11,12 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true }
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}</body></html>;
+  const publicConfig=publicSupabaseConfig();
+  // Evita dependência exclusiva do build para valores públicos do cliente.
+  // Escapamos caracteres que poderiam interromper um <script>.
+  const serialized=JSON.stringify(publicConfig)
+    .replace(/</g,'\\u003c').replace(/\\u2028/g,'\\u2028').replace(/\\u2029/g,'\\u2029');
+  return <html lang="pt-BR"><head><script dangerouslySetInnerHTML={{
+   __html:'window.__REALIZA_PUBLIC_SUPABASE__='+serialized+';'
+  }}/></head><body>{children}</body></html>;
 }
