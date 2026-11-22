@@ -43,7 +43,7 @@ export const modules:BusinessModule[]=[
  {key:'quantity_m3',label:'Volume programado (m³)',type:'number',required:true,step:'0.01'},
  {key:'unit_price',label:'Preço unitário (R$)',type:'number',step:'0.01'},
  {key:'freight_fee',label:'Frete (R$)',type:'number',step:'0.01'},
- {key:'status',label:'Situação',type:'select',options:['pendente','programada','em_rota','entregue','cancelada']},
+ {key:'payment_mode',label:'Condição de pagamento',type:'select',options:['antecipado','faturado']},
  {key:'notes',label:'Instruções operacionais',type:'textarea'}
 ]},
 {key:'vehicles',table:'vehicles',title:'Frota',singular:'Caminhão',description:'Capacidade, placas, manutenção e disponibilidade.',icon:'▰',readRoles:all,writeRoles:ops,fields:[
