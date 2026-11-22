@@ -8,6 +8,11 @@ const ops=['admin','gestor','operacoes'];
 const money=['admin','gestor','financeiro'];
 const basic={type:'text' as FieldType};
 export const modules:BusinessModule[]=[
+{key:'profiles',table:'profiles',title:'Usuários e acessos',singular:'Usuário',description:'Ative colaboradores e controle permissões internas.',icon:'♙',readRoles:['admin','gestor'],writeRoles:['admin'],fields:[
+ {key:'name',label:'Nome',required:true},{key:'email',label:'E-mail',type:'email'},
+ {key:'role',label:'Perfil de acesso',type:'select',options:['pendente','admin','gestor','comercial','operacoes','financeiro','analista','motorista']},
+ {key:'active',label:'Conta ativa',type:'checkbox'}
+]},
 {key:'leads',table:'leads',title:'Oportunidades',singular:'Lead',description:'Solicitações, origem e qualificação comercial.',icon:'◎',readRoles:all,writeRoles:sell,fields:[
  {key:'name',label:'Nome / Empresa',required:true},{key:'phone',label:'Telefone',type:'tel',required:true},{key:'email',label:'E-mail',type:'email'},
  {key:'city',label:'Cidade'},{key:'address',label:'Local de entrega'},{key:'quantity_m3',label:'Volume solicitado (m³)',type:'number',step:'0.01'},
