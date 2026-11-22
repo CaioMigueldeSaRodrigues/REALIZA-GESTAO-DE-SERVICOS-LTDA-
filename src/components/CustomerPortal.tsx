@@ -98,7 +98,7 @@ export function CustomerPortal({name}:{name:string}){
      <span className="pill">{t(q.status).replaceAll('_',' ')}{expired&&q.status==='enviada'?' · vencida':''}</span>
      <small>Destino: {t(related?.address||'endereço do pedido')} · validade: {t(q.valid_until||'não definida')}</small>
      <small>Preço por m³: {brl(q.unit_price as number)} · Frete: {brl(q.freight_fee as number)}</small>
-     {q.notes&&<small>Condições: {t(q.notes)}</small>}
+     {Boolean(q.notes)&&<small>Condições: {t(q.notes)}</small>}
      {q.status==='enviada'&&!expired&&<button className="btn primary" disabled={busy} style={{alignSelf:'flex-start',marginTop:8}}
       onClick={()=>void acceptQuote(q)}>Aceitar proposta e gerar pedido</button>}
      {q.status==='aprovada'&&<small>Proposta aceita. A ordem de serviço está em preparação pela equipe.</small>}
