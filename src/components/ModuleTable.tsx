@@ -23,7 +23,7 @@ export function ModuleTable({moduleKey,role}:{moduleKey:string;role:string}){
    const lookups=await Promise.all(sources.map(async k=>{
     const m=REFS[k];const result=await db.from(m.table).select('id,'+m.label).limit(500);
     if(result.error)return [k,[]] as const;
-    return [k,(result.data||[]).map((it:Row)=>({id:str(it.id),label:str(it[m.label])||str(it.id).slice(0,8)}))] as const;
+    return [k,((result.data||[]) as unknown as Row[]).map((it:Row)=>({id:str(it.id),label:str(it[m.label])||str(it.id).slice(0,8)}))] as const;
    }));
    setRefs(Object.fromEntries(lookups));
   }catch(e){setError(e instanceof Error?e.message:'Erro ao carregar registros.')}
@@ -33,7 +33,7 @@ export function ModuleTable({moduleKey,role}:{moduleKey:string;role:string}){
  if(!def)return <div>Módulo indisponível.</div>;
  const mayWrite=canAccess(role,def.writeRoles);
  const filtered=rows.filter(row=>Object.values(row).some(v=>str(v).toLowerCase().includes(search.toLowerCase())));
- function open(row?:Row){setEditing(row||null);setDraft(row?{...row}:{status:def.fields.find(x=>x.key==='status')?.options?.[0]||undefined});setShowForm(true);setError('')}
+ function open(row?:Row){setEditing(row||null);setDraft(row?{...row}:{status:def?.fields.find(x=>x.key==='status')?.options?.[0]||undefined});setShowForm(true);setError('')}
  function renderValue(field:Field,row:Row){
   const v=row[field.key];if(v==null||v==='')return '—';
   if(field.type==='ref')return refs[field.ref||'']?.find(o=>o.id===v)?.label||str(v).slice(0,8);
@@ -87,7 +87,7 @@ export function ModuleTable({moduleKey,role}:{moduleKey:string;role:string}){
  }
  const compact=def.fields.filter(f=>f.type!=='textarea').slice(0,5);
  return <div className="module">
-  <div className="page-heading"><div><span className="eyebrow">GESTÃO INTEGRADA</span><h1>{def.title}</h1><p>{def.description}</p></div>{mayWrite&&<button className="btn primary" onClick={()=>open()}>+ Novo registro</button>}</div>
+  <div className="page-heading"><div><span className="eyebrow">GESTÃO INTEGRADA</span><h1>{def.title}</h1><p>{def.description}</p></div>{mayWrite&&moduleKey!=='profiles'&&<button className="btn primary" onClick={()=>open()}>+ Novo registro</button>}</div>
   <div className="toolbar"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Pesquisar neste módulo..."/></label><div className="toolbar-meta">{filtered.length} registros <button onClick={load} className="btn soft-button" disabled={busy}>↻ Atualizar</button></div></div>
   {error&&<p className="notice error" role="alert">{error}</p>}
   <div className="table-card">
