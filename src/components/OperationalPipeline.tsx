@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {browserDb} from '@/lib/supabase-browser';
 import {brl,dateTimeBr} from '@/lib/format';
+import {IncomingRequests} from '@/components/IncomingRequests';
 type Row=Record<string,unknown>;
 const s=(x:unknown)=>String(x??'');
 export function OperationalPipeline({role}:{role:string}){
@@ -57,6 +58,7 @@ export function OperationalPipeline({role}:{role:string}){
  }
  const section=(title:string,children:React.ReactNode)=><article className="ops-stage"><h3>{title}</h3>{children}</article>;
  return <div>
+  <IncomingRequests role={role}/>
   <div className="page-heading"><div><span className="eyebrow">OPERAÇÃO INTEGRADA</span><h1>Central de operações</h1><p>Pedidos, cobrança, conferência fiscal, frota e entrega em uma só tela.</p></div><button className="btn light" onClick={()=>void load()}>Atualizar</button></div>
   {message&&<p role="status" className="notice">{message}</p>}
   <div className="ops-grid">
