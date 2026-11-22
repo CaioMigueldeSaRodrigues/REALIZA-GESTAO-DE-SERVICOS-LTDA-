@@ -8,7 +8,7 @@ const t=(v:unknown)=>String(v??'');
 export function CustomerPortal({name}:{name:string}){
  const db=useMemo(()=>browserDb(),[]);
  const [requests,setRequests]=useState<Row[]>([]),[orders,setOrders]=useState<Row[]>([]);
- const [payments,setPayments]=useState<Row[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [payments,setPayments]=useState<Row[]>([]),[quotes,setQuotes]=useState<Row[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [primaryAddress,setPrimaryAddress]=useState<Address|null>(null),[deliveryMode,setDeliveryMode]=useState<'cadastro'|'outro'>('cadastro'),[otherAddress,setOtherAddress]=useState<Address>(emptyAddress);
  const [volume,setVolume]=useState(''),[waterUse,setWaterUse]=useState(''),[notes,setNotes]=useState('');
  async function load(){
@@ -18,11 +18,12 @@ export function CustomerPortal({name}:{name:string}){
    db.from('customer_requests').select('id,city,address,address_origin,quantity_m3,water_use,status,created_at').order('created_at',{ascending:false}).limit(100),
    db.from('orders').select('id,status,address,city,quantity_m3,total,scheduled_at,delivered_at,created_at').order('created_at',{ascending:false}).limit(100),
    db.from('payment_transactions').select('order_id,status,checkout_url').limit(100),
-   db.from('clients').select('postal_code,street,street_number,complement,neighborhood,city,state').eq('auth_user_id',user.id).maybeSingle()
+   db.from('clients').select('postal_code,street,street_number,complement,neighborhood,city,state').eq('auth_user_id',user.id).maybeSingle(),
+   db.from('quotes').select('id,customer_request_id,status,quantity_m3,unit_price,freight_fee,total,valid_until,notes,created_at').not('customer_request_id','is',null).order('created_at',{ascending:false}).limit(100)
   ]);
   const failure=r.find(v=>v.error);if(failure?.error){setError(failure.error.message);return}
   setRequests((r[0].data||[]) as Row[]);setOrders((r[1].data||[]) as Row[]);
-  setPayments((r[2].data||[]) as Row[]);
+  setPayments((r[2].data||[]) as Row[]);setQuotes((r[4].data||[]) as Row[]);
   const dbAddress=(r[3].data||{}) as Record<string,unknown>;
   const candidate:Address={...emptyAddress(),...Object.fromEntries(['postal_code','street','street_number','complement','neighborhood','city','state'].map(key=>[key,String(dbAddress[key]||'')]))};
   if(validAddress(candidate))setPrimaryAddress(candidate);
@@ -46,6 +47,16 @@ export function CustomerPortal({name}:{name:string}){
    if(deliveryMode==='outro')setOtherAddress(emptyAddress());
    await load();
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível enviar o pedido.')}
+  finally{setBusy(false)}
+ }
+ async function acceptQuote(quote:Row){
+  if(!window.confirm('Confirma a aprovação da proposta no valor de '+brl(quote.total as number)+'? A ordem de serviço será criada para análise operacional.'))return;
+  setBusy(true);setError('');
+  try{
+   const {error}=await db.rpc('accept_customer_quote',{p_quote_id:quote.id});
+   if(error)throw error;
+   await load();
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível aprovar a proposta.')}
   finally{setBusy(false)}
  }
  return <main className="customer-portal">
@@ -78,6 +89,22 @@ export function CustomerPortal({name}:{name:string}){
     </div>)}
    </section>
   </div>
+  <section className="panel" style={{marginTop:18}}><h2>Propostas comerciais</h2>
+   {!quotes.length?<p>As propostas preparadas pela REALIZA aparecerão aqui para sua avaliação, sem compromisso até o aceite.</p>:quotes.map(q=>{
+    const related=requests.find(r=>r.id===q.customer_request_id);
+    const expired=q.valid_until?String(q.valid_until)<new Date().toISOString().slice(0,10):false;
+    return <div className="customer-entry" key={t(q.id)}>
+     <strong>{numberBr(q.quantity_m3 as number)} m³ · {brl(q.total as number)}</strong>
+     <span className="pill">{t(q.status).replaceAll('_',' ')}{expired&&q.status==='enviada'?' · vencida':''}</span>
+     <small>Destino: {t(related?.address||'endereço do pedido')} · validade: {t(q.valid_until||'não definida')}</small>
+     <small>Preço por m³: {brl(q.unit_price as number)} · Frete: {brl(q.freight_fee as number)}</small>
+     {q.notes&&<small>Condições: {t(q.notes)}</small>}
+     {q.status==='enviada'&&!expired&&<button className="btn primary" disabled={busy} style={{alignSelf:'flex-start',marginTop:8}}
+      onClick={()=>void acceptQuote(q)}>Aceitar proposta e gerar pedido</button>}
+     {q.status==='aprovada'&&<small>Proposta aceita. A ordem de serviço está em preparação pela equipe.</small>}
+    </div>;
+   })}
+  </section>
   <section className="panel" style={{marginTop:18}}><h2>Minhas ordens e pagamentos</h2>
    {!orders.length?<p>As ordens aprovadas aparecerão aqui.</p>:orders.map(o=>{
     const payment=payments.find(p=>p.order_id===o.id);
