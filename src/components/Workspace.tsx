@@ -9,7 +9,7 @@ import {Assistant} from '@/components/Assistant';
 import {RoutePlanner} from '@/components/RoutePlanner';
 import {OperationalPipeline} from '@/components/OperationalPipeline';
 import {CustomerPortal} from '@/components/CustomerPortal';
-type Profile={id:string;name:string;role:string;active:boolean};
+type Profile={id:string;name:string;role:string;active:boolean;demo_expires_at?:string|null};
 export function Workspace(){
  const [profile,setProfile]=useState<Profile|null>(null),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[tab,setTab]=useState('pipeline'),[sidebar,setSidebar]=useState(false);
@@ -19,7 +19,7 @@ export function Workspace(){
    try{
     const db=browserDb();const {data:{user},error:authError}=await db.auth.getUser();
     if(authError||!user){window.location.replace('/login');return}
-    let {data,error:profileError}=await db.from('profiles').select('id,name,role,active').eq('id',user.id).single();
+    let {data,error:profileError}=await db.from('profiles').select('id,name,role,active,demo_expires_at').eq('id',user.id).single();
     if(profileError)throw profileError;
     if(data?.role==='pendente'&&!data.active&&user.email_confirmed_at&&user.user_metadata?.account_kind==='customer'){
      const meta=user.user_metadata;
@@ -27,11 +27,14 @@ export function Workspace(){
       p_name:String(meta.name||''),p_phone:String(meta.phone||''),p_person_type:String(meta.person_type||'fisica')
      });
      if(activationError)throw activationError;
-     const refreshed=await db.from('profiles').select('id,name,role,active').eq('id',user.id).single();
+     const refreshed=await db.from('profiles').select('id,name,role,active,demo_expires_at').eq('id',user.id).single();
      if(refreshed.error)throw refreshed.error;
      data=refreshed.data;
     }
     if(!data?.active)throw new Error('Sua conta aguarda ativação ou confirmação de e-mail. Funcionários devem solicitar acesso à administração.');
+    if(data.demo_expires_at&&new Date(data.demo_expires_at).getTime()<=Date.now()){
+     throw new Error('A conta de homologação expirou. Gere uma nova conta temporária para testar.');
+    }
     if(!cancelled)setProfile(data);
    }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Não foi possível carregar sua conta.')}
    finally{if(!cancelled)setLoading(false)}
@@ -71,6 +74,9 @@ export function Workspace(){
     <div className="topbar-right"><span className="status-dot"/> Ambiente privado <span className="top-avatar">{profile.name[0]?.toUpperCase()}</span></div>
    </header>
    <main className="workspace-content">
+    {profile.demo_expires_at&&<div role="status" className="notice" style={{marginBottom:18}}>
+     Perfil temporário de homologação · Expiração: {new Date(profile.demo_expires_at).toLocaleString('pt-BR')}
+    </div>}
     {tab==='overview'?<Overview role={profile.role}/>:tab==='pipeline'?<OperationalPipeline role={profile.role}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:<ModuleTable key={tab} moduleKey={tab} role={profile.role}/>}
    </main>
    <footer className="workspace-footer">REALIZA Gestão de Serviços • Plataforma própria • Dados protegidos por permissões</footer>

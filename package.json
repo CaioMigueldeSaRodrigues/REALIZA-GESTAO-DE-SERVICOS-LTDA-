@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "check": "tsc --noEmit",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "admin:demo": "node --env-file=.env.local scripts/create-demo-admin.mjs"
   },
   "dependencies": {
     "next": "16.4.6",
