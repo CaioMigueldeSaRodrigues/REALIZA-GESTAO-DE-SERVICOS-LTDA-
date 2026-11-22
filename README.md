@@ -25,3 +25,11 @@ Detalhes: [Escopo](docs/ESCOPO.md) · [Implantação](docs/IMPLANTACAO.md) · [A
 **Estado:** base de implementação técnica inicial. Antes de produção: configurar APIs, aplicar migrations, testar build, homologar operações, revisar LGPD/sanitário, validar o site com a empresa.
 
 Não há credenciais reais neste repositório público.
+
+## Publicação na Vercel
+- Conecte este repositório ao projeto Vercel, selecionando **Next.js**, diretório raiz `./` e a branch de produção **main**.
+- Cadastre em **Environment Variables → Production**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (secreta, apenas servidor) e `NEXT_PUBLIC_SITE_URL` com o domínio final.
+- A publicação é iniciada automaticamente por novos commits na branch `main`, desde que a integração GitHub ↔ Vercel e as permissões do autor estejam válidas.
+- Após o primeiro deploy, confira **Deployments → Build Logs** e verifique o domínio e os redirecionamentos do Supabase Auth.
+- O build concluído no GitHub Actions **não comprova** o deploy na Vercel; valide os dois separadamente.
+- Não comite segredos, tokens OAuth ou arquivos `.env` com dados reais.
