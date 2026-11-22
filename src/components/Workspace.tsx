@@ -8,19 +8,30 @@ import {Overview} from '@/components/Overview';
 import {Assistant} from '@/components/Assistant';
 import {RoutePlanner} from '@/components/RoutePlanner';
 import {OperationalPipeline} from '@/components/OperationalPipeline';
+import {CustomerPortal} from '@/components/CustomerPortal';
 type Profile={id:string;name:string;role:string;active:boolean};
 export function Workspace(){
  const [profile,setProfile]=useState<Profile|null>(null),[loading,setLoading]=useState(true);
- const [error,setError]=useState(''),[tab,setTab]=useState('overview'),[sidebar,setSidebar]=useState(false);
+ const [error,setError]=useState(''),[tab,setTab]=useState('pipeline'),[sidebar,setSidebar]=useState(false);
  useEffect(()=>{
   let cancelled=false;
   async function init(){
    try{
     const db=browserDb();const {data:{user},error:authError}=await db.auth.getUser();
     if(authError||!user){window.location.replace('/login');return}
-    const {data,error:profileError}=await db.from('profiles').select('id,name,role,active').eq('id',user.id).single();
+    let {data,error:profileError}=await db.from('profiles').select('id,name,role,active').eq('id',user.id).single();
     if(profileError)throw profileError;
-    if(!data?.active)throw new Error('Sua conta aguarda ativação por um administrador.');
+    if(data?.role==='pendente'&&!data.active&&user.email_confirmed_at&&user.user_metadata?.account_kind==='customer'){
+     const meta=user.user_metadata;
+     const {error:activationError}=await db.rpc('activate_customer_account',{
+      p_name:String(meta.name||''),p_phone:String(meta.phone||''),p_person_type:String(meta.person_type||'fisica')
+     });
+     if(activationError)throw activationError;
+     const refreshed=await db.from('profiles').select('id,name,role,active').eq('id',user.id).single();
+     if(refreshed.error)throw refreshed.error;
+     data=refreshed.data;
+    }
+    if(!data?.active)throw new Error('Sua conta aguarda ativação ou confirmação de e-mail. Funcionários devem solicitar acesso à administração.');
     if(!cancelled)setProfile(data);
    }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Não foi possível carregar sua conta.')}
    finally{if(!cancelled)setLoading(false)}
@@ -33,17 +44,23 @@ export function Workspace(){
  if(loading)return <main className="screen-center"><div className="spinner"/> <p>Carregando ambiente seguro...</p></main>;
  if(error)return <main className="screen-center"><div className="error-panel"><h2>Verificação de acesso</h2><p>{error}</p><Link className="btn primary" href="/login">Voltar ao acesso</Link></div></main>;
  if(!profile)return null;
+ if(profile.role==='cliente'){
+  return <div className="workspace-main" style={{minHeight:'100vh'}}>
+   <header className="topbar"><strong>REALIZA · Área do Cliente</strong><button className="btn light" onClick={signOut}>Sair</button></header>
+   <div className="workspace-content"><CustomerPortal name={profile.name}/></div>
+  </div>;
+ }
  const available=modules.filter(m=>canAccess(profile.role,m.readRoles));
  return <div className="workspace">
   <aside className={'sidebar '+(sidebar?'sidebar-open':'')}>
    <div className="sidebar-top"><Link className="brand sidebar-brand" href="/"><span className="brand-mark">◉</span><span>REALIZA<small>GESTÃO INTELIGENTE</small></span></Link><button className="icon-btn mobile-only" aria-label="Fechar menu" onClick={()=>setSidebar(false)}>×</button></div>
    <div className="sidebar-caption">ESPAÇO DE TRABALHO</div>
    <nav className="nav-group">
-    <button className={'nav-item '+(tab==='overview'?'selected':'')} onClick={()=>change('overview')}><span>▦</span> Visão geral</button>
+    {profile.role!=='motorista'&&<button className={'nav-item '+(tab==='overview'?'selected':'')} onClick={()=>change('overview')}><span>▦</span> Visão geral</button>}
     <button className={'nav-item '+(tab==='pipeline'?'selected':'')} onClick={()=>change('pipeline')}><span>⇄</span> Fluxo operacional</button>
     {available.map(m=><button key={m.key} className={'nav-item '+(tab===m.key?'selected':'')} onClick={()=>change(m.key)}><span>{m.icon}</span>{m.title}</button>)}
-    <button className={'nav-item '+(tab==='route'?'selected':'')} onClick={()=>change('route')}><span>⌁</span> Programação logística</button>
-    <button className={'nav-item '+(tab==='ai'?'selected':'')} onClick={()=>change('ai')}><span>✦</span> Agente de IA</button>
+    {profile.role!=='motorista'&&<button className={'nav-item '+(tab==='route'?'selected':'')} onClick={()=>change('route')}><span>⌁</span> Programação logística</button>}
+    {profile.role!=='motorista'&&<button className={'nav-item '+(tab==='ai'?'selected':'')} onClick={()=>change('ai')}><span>✦</span> Agente de IA</button>}
    </nav>
    <div className="sidebar-footer"><div className="user-chip"><span className="avatar">{profile.name.slice(0,1).toUpperCase()}</span><div><strong>{profile.name}</strong><small>{profile.role}</small></div></div><button className="nav-item signout" onClick={signOut}>↪ Sair da conta</button></div>
   </aside>
