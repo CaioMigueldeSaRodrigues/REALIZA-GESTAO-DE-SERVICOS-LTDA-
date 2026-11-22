@@ -38,3 +38,16 @@
 .customer-entry{border-top:1px solid #e5edf1;padding:16px 0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
 .customer-entry strong{font-size:13px;color:#19495d}.customer-entry small{font-size:11px;color:#768e9b}
 @media(max-width:850px){.customer-grid{grid-template-columns:1fr}}
+
+
+.signup-address{border-top:1px solid #e2ebed;padding-top:17px;margin-top:18px;margin-bottom:20px}
+.signup-address h2{font-size:17px;margin:0 0 5px;letter-spacing:-.02em}
+.signup-address p{font-size:12px;margin:0 0 14px}
+.address-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:13px}
+.address-fields label{min-width:0}.address-fields .address-wide{grid-column:1/-1}
+.address-choice{display:grid;gap:9px;margin:12px 0 17px}
+.address-choice label{display:flex;gap:10px;align-items:flex-start;padding:13px;border:1px solid #dbe8ec;border-radius:10px;background:white;font-size:12px}
+.address-choice input{width:auto;flex-shrink:0;margin:3px 0}
+.address-display{padding:13px 15px;background:#edf6f6;border-radius:10px;color:#315865;font-size:12px;margin:12px 0}
+.address-choice .disabled{opacity:.5}
+@media(max-width:410px){.address-fields{grid-template-columns:1fr}}
