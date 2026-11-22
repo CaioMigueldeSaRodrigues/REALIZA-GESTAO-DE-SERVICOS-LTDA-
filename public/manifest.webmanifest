@@ -1,0 +1,17 @@
+{
+  "name": "REALIZA Gestão | Águaserv",
+  "short_name": "REALIZA",
+  "description": "ERP operacional para distribuição de água",
+  "start_url": "/painel",
+  "display": "standalone",
+  "background_color": "#f6f8fa",
+  "theme_color": "#134c62",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
