@@ -81,8 +81,12 @@ export function OperationalPipeline({role}:{role:string}){
       </>}
      </>)}
      {section('2 · Conferência fiscal',<>
-      <p>Situação: <strong>{s(selectedFiscal?.status||'pendente')}</strong>. Consulta fiscal manual, com identificação do responsável.</p>
-      <a className="tiny-btn" href="https://www.nfe.fazenda.gov.br/portal/consulta.aspx" target="_blank" rel="noopener noreferrer">Abrir portal oficial NF-e ↗</a>
+      <p>Situação: <strong>{s(selectedFiscal?.status||'pendente')}</strong>. Conferência manual nos órgãos competentes: NF-e estadual na SEF/MG; NFS-e municipal ou nacional conforme regime. O lançamento não realiza validação automática.</p>
+      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:12}}>
+       <a className="tiny-btn" href="https://portalnfe.fazenda.mg.gov.br/portalnfe/" target="_blank" rel="noopener noreferrer">SEF/MG — consultar NF-e ↗</a>
+       <a className="tiny-btn" href="https://pousoalegre.atende.net/autoatendimento/servicos/consulta-de-autenticidade-de-nota-fiscal-eletronica-nfse/detalhar/1" target="_blank" rel="noopener noreferrer">Pouso Alegre — consultar NFS-e ↗</a>
+       <a className="tiny-btn" href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener noreferrer">Emissor Nacional NFS-e ↗</a>
+      </div>
       {chosen.status==='pendente'&&canFinance&&<div className="ops-form">
        <label>Documento<select value={fType} onChange={e=>setFType(e.target.value)}><option value="nfe">NF-e</option><option value="nfse">NFS-e</option><option value="cte">CT-e</option><option value="dispensa">Dispensa justificada</option></select></label>
        {fType!=='dispensa'&&<>
