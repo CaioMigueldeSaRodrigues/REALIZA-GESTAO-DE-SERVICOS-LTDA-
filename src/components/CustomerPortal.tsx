@@ -62,7 +62,7 @@ export function CustomerPortal({name}:{name:string}){
      <strong>OS {t(o.id).slice(0,8).toUpperCase()} · {brl(o.total as number)}</strong>
      <span className="pill">{t(o.status)}</span>
      <small>{t(o.city)} · {numberBr(o.quantity_m3 as number)} m³ · pagamento: {t(payment?.status||'a confirmar')} · {o.scheduled_at?'Previsão: '+dateTimeBr(t(o.scheduled_at)):'Aguardando programação'}</small>
-     {payment?.checkout_url&&payment.status!=='aprovado'&&<a href={t(payment.checkout_url)} className="btn light" target="_blank" rel="noopener noreferrer" style={{alignSelf:'flex-start',marginTop:8}}>Abrir pagamento no provedor ↗</a>}
+     {Boolean(payment?.checkout_url)&&payment?.status!=='aprovado'&&<a href={t(payment.checkout_url)} className="btn light" target="_blank" rel="noopener noreferrer" style={{alignSelf:'flex-start',marginTop:8}}>Abrir pagamento no provedor ↗</a>}
     </div>
    })}
   </section>
