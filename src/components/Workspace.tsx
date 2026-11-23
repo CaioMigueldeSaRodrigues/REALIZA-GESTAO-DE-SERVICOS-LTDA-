@@ -13,6 +13,8 @@ type Profile={id:string;name:string;role:string;active:boolean;demo_expires_at?:
 export function Workspace(){
  const [profile,setProfile]=useState<Profile|null>(null),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[tab,setTab]=useState('pipeline'),[sidebar,setSidebar]=useState(false);
+ const [adminAccess,setAdminAccess]=useState<{expires_at:string}|null>(null);
+ const [adminMode,setAdminMode]=useState(false);
  useEffect(()=>{
   let cancelled=false;
   async function init(){
@@ -42,7 +44,16 @@ export function Workspace(){
     if(data.demo_expires_at&&new Date(data.demo_expires_at).getTime()<=Date.now()){
      throw new Error('A conta de homologação expirou. Gere uma nova conta temporária para testar.');
     }
-    if(!cancelled)setProfile(data);
+    const {data:grants,error:grantError}=await db.rpc('my_temporary_admin_access');
+    if(grantError)throw grantError;
+    const grant=Array.isArray(grants)&&grants.length>0?grants[0]:null;
+    if(!cancelled){
+     setProfile(data);
+     if(grant?.granted_role==='admin'&&grant.expires_at){
+      setAdminAccess({expires_at:String(grant.expires_at)});
+      setAdminMode(true);
+     }
+    }
    }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Não foi possível carregar sua conta.')}
    finally{if(!cancelled)setLoading(false)}
   }init();
@@ -54,25 +65,30 @@ export function Workspace(){
  if(loading)return <main className="screen-center"><div className="spinner"/> <p>Carregando ambiente seguro...</p></main>;
  if(error)return <main className="screen-center"><div className="error-panel"><h2>Verificação de acesso</h2><p>{error}</p><Link className="btn primary" href="/login">Voltar ao acesso</Link></div></main>;
  if(!profile)return null;
- if(profile.role==='cliente'){
+ const isDual=profile.role==='cliente'&&!!adminAccess&&new Date(adminAccess.expires_at).getTime()>Date.now();
+ const effectiveRole=isDual&&adminMode?'admin':profile.role;
+ if(effectiveRole==='cliente'){
   return <div className="workspace-main" style={{minHeight:'100vh'}}>
-   <header className="topbar"><strong>REALIZA · Área do Cliente</strong><button className="btn light" onClick={signOut}>Sair</button></header>
+   <header className="topbar"><strong>REALIZA · Área do Cliente</strong><div style={{display:'flex',gap:8,alignItems:'center'}}>
+    {isDual&&<button className="btn primary" onClick={()=>{setAdminMode(true);setTab('pipeline')}}>Ir para administração</button>}
+    <button className="btn light" onClick={signOut}>Sair</button></div></header>
    <div className="workspace-content"><CustomerPortal name={profile.name}/></div>
   </div>;
  }
- const available=modules.filter(m=>canAccess(profile.role,m.readRoles));
+ const available=modules.filter(m=>canAccess(effectiveRole,m.readRoles));
  return <div className="workspace">
   <aside className={'sidebar '+(sidebar?'sidebar-open':'')}>
    <div className="sidebar-top"><Link className="brand sidebar-brand" href="/"><span className="brand-mark">◉</span><span>REALIZA<small>GESTÃO INTELIGENTE</small></span></Link><button className="icon-btn mobile-only" aria-label="Fechar menu" onClick={()=>setSidebar(false)}>×</button></div>
    <div className="sidebar-caption">ESPAÇO DE TRABALHO</div>
+   {isDual&&<button className="nav-item" onClick={()=>{setAdminMode(false);setSidebar(false)}}><span>↩</span> Voltar ao portal do cliente</button>}
    <nav className="nav-group">
-    {profile.role!=='motorista'&&<button className={'nav-item '+(tab==='overview'?'selected':'')} onClick={()=>change('overview')}><span>▦</span> Visão geral</button>}
+    {effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='overview'?'selected':'')} onClick={()=>change('overview')}><span>▦</span> Visão geral</button>}
     <button className={'nav-item '+(tab==='pipeline'?'selected':'')} onClick={()=>change('pipeline')}><span>⇄</span> Fluxo operacional</button>
     {available.map(m=><button key={m.key} className={'nav-item '+(tab===m.key?'selected':'')} onClick={()=>change(m.key)}><span>{m.icon}</span>{m.title}</button>)}
-    {profile.role!=='motorista'&&<button className={'nav-item '+(tab==='route'?'selected':'')} onClick={()=>change('route')}><span>⌁</span> Programação logística</button>}
-    {profile.role!=='motorista'&&<button className={'nav-item '+(tab==='ai'?'selected':'')} onClick={()=>change('ai')}><span>✦</span> Agente de IA</button>}
+    {effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='route'?'selected':'')} onClick={()=>change('route')}><span>⌁</span> Programação logística</button>}
+    {effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='ai'?'selected':'')} onClick={()=>change('ai')}><span>✦</span> Agente de IA</button>}
    </nav>
-   <div className="sidebar-footer"><div className="user-chip"><span className="avatar">{profile.name.slice(0,1).toUpperCase()}</span><div><strong>{profile.name}</strong><small>{profile.role}</small></div></div><button className="nav-item signout" onClick={signOut}>↪ Sair da conta</button></div>
+   <div className="sidebar-footer"><div className="user-chip"><span className="avatar">{profile.name.slice(0,1).toUpperCase()}</span><div><strong>{profile.name}</strong><small>{effectiveRole}{isDual?' · homologação':''}</small></div></div><button className="nav-item signout" onClick={signOut}>↪ Sair da conta</button></div>
   </aside>
   {sidebar&&<button className="backdrop mobile-only" aria-label="Fechar navegação" onClick={()=>setSidebar(false)}/>}
   <div className="workspace-main">
@@ -81,10 +97,13 @@ export function Workspace(){
     <div className="topbar-right"><span className="status-dot"/> Ambiente privado <span className="top-avatar">{profile.name[0]?.toUpperCase()}</span></div>
    </header>
    <main className="workspace-content">
+    {isDual&&<div role="status" className="notice" style={{marginBottom:18}}>
+      Acesso ADM de homologação · Conta de cliente preservada · Validade até {new Date(adminAccess!.expires_at).toLocaleString('pt-BR')}.
+    </div>}
     {profile.demo_expires_at&&<div role="status" className="notice" style={{marginBottom:18}}>
      Perfil temporário de homologação · Expiração: {new Date(profile.demo_expires_at).toLocaleString('pt-BR')}
     </div>}
-    {tab==='overview'?<Overview role={profile.role}/>:tab==='pipeline'?<OperationalPipeline role={profile.role}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:<ModuleTable key={tab} moduleKey={tab} role={profile.role}/>}
+    {tab==='overview'?<Overview role={effectiveRole}/>:tab==='pipeline'?<OperationalPipeline role={effectiveRole}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:<ModuleTable key={tab} moduleKey={tab} role={effectiveRole}/>}
    </main>
    <footer className="workspace-footer">REALIZA Gestão de Serviços • Plataforma própria • Dados protegidos por permissões</footer>
   </div>
