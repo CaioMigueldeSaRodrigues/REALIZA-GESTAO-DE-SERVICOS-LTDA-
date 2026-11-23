@@ -8,9 +8,8 @@ export async function POST(request:Request){
   const db=await serverDb();
   const {data:{user}}=await db.auth.getUser();
   if(!user)return Response.json({error:'Entre com sua conta.'},{status:401});
-  const {data:profile}=await db.from('profiles').select('role,active').eq('id',user.id).single();
-  if(!profile?.active||!['admin','gestor','financeiro','comercial'].includes(profile.role))
-    return Response.json({error:'Sem permissão.'},{status:403});
+  const {data:scope,error:scopeError}=await db.rpc('my_workspace_scope');
+  if(scopeError||scope!=='owner')return Response.json({error:'Recurso disponível somente ao titular da REALIZA.'},{status:403});
   const raw=await request.text();
   if(raw.length>2000)return Response.json({error:'Requisição inválida.'},{status:413});
   const id=(JSON.parse(raw) as {orderId?:string}).orderId;

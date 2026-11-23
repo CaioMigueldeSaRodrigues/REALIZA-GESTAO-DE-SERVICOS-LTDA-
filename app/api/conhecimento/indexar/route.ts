@@ -5,8 +5,8 @@ export async function POST(){
   const db=await serverDb();
   const {data:{user}}=await db.auth.getUser();
   if(!user)return Response.json({error:'Sessão obrigatória.'},{status:401});
-  const {data:p}=await db.from('profiles').select('role,active').eq('id',user.id).single();
-  if(!p?.active||!['admin','gestor'].includes(p.role))return Response.json({error:'Sem autorização.'},{status:403});
+  const {data:scope,error:scopeError}=await db.rpc('my_workspace_scope');
+  if(scopeError||scope!=='owner')return Response.json({error:'Recurso disponível somente ao titular da REALIZA.'},{status:403});
   const base=process.env.AI_BASE_URL,model=process.env.AI_EMBED_MODEL;
   if(!base||!model)return Response.json({error:'Defina AI_BASE_URL e AI_EMBED_MODEL (1536 dimensões).'}, {status:422});
   const {data:docs,error}=await db.from('documents').select('id,title,content').is('embedding',null).limit(10);

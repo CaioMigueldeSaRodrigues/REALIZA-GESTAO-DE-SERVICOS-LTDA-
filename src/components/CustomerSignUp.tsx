@@ -30,8 +30,8 @@ export function CustomerSignUp(){
  return <main className="auth-page">
   <Link className="brand small" href="/login"><span className="brand-mark">◉</span> REALIZA <small>PLATAFORMA INTEGRADA</small></Link>
   <div className="auth-card">
-   <span className="eyebrow">PORTAL DO CLIENTE</span><h1>Crie seu cadastro</h1>
-   <p>Um único acesso para solicitar serviços e acompanhar pedidos. Cadastro público exclusivo para clientes.</p>
+   <span className="eyebrow">ACESSO DE APRESENTAÇÃO</span><h1>Crie seu cadastro</h1>
+   <p>Neste período de apresentação, o cadastro libera apenas o fluxo operacional, Financeiro e DRE com dados fictícios. Nenhuma cobrança ou solicitação real será efetuada.</p>
    {!done&&<form onSubmit={submit}>
     <label>Nome completo / Razão social<input required maxLength={140} value={name} onChange={e=>setName(e.target.value)} autoComplete="name"/></label>
     <label>Tipo de cadastro<select value={kind} onChange={e=>setKind(e.target.value)}><option value="fisica">Pessoa física</option><option value="juridica">Pessoa jurídica</option></select></label>

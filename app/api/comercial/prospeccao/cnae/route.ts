@@ -42,6 +42,8 @@ export async function POST(request:Request){
   const db=await serverDb();
   const {data:{user}}=await db.auth.getUser();
   if(!user)return Response.json({error:'Login necessário.'},{status:401});
+  const {data:scope,error:scopeError}=await db.rpc('my_workspace_scope');
+  if(scopeError||scope!=='owner')return Response.json({error:'Recurso disponível somente ao titular da REALIZA.'},{status:403});
   const raw=await request.text();
   if(raw.length>800)return Response.json({error:'Consulta inválida.'},{status:413});
   const cnae=String((JSON.parse(raw) as {cnae?:unknown}).cnae||'').replace(/\D/g,'');
