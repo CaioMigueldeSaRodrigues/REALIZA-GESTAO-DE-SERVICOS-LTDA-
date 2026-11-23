@@ -5,6 +5,7 @@ import {browserDb} from '@/lib/supabase-browser';
 import {modules,canAccess} from '@/lib/modules';
 import {ModuleTable} from '@/components/ModuleTable';
 import {Overview} from '@/components/Overview';
+import {DRE} from '@/components/DRE';
 import {Assistant} from '@/components/Assistant';
 import {RoutePlanner} from '@/components/RoutePlanner';
 import {OperationalPipeline} from '@/components/OperationalPipeline';
@@ -103,7 +104,7 @@ export function Workspace(){
     {profile.demo_expires_at&&<div role="status" className="notice" style={{marginBottom:18}}>
      Perfil temporário de homologação · Expiração: {new Date(profile.demo_expires_at).toLocaleString('pt-BR')}
     </div>}
-    {tab==='overview'?<Overview role={effectiveRole}/>:tab==='pipeline'?<OperationalPipeline role={effectiveRole}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:<ModuleTable key={tab} moduleKey={tab} role={effectiveRole}/>}
+    {tab==='overview'?<Overview role={effectiveRole}/>:tab==='pipeline'?<OperationalPipeline role={effectiveRole}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:tab==='dre'?<DRE role={effectiveRole}/>:<ModuleTable key={tab} moduleKey={tab} role={effectiveRole}/>}
    </main>
    <footer className="workspace-footer">REALIZA Gestão de Serviços • Plataforma própria • Dados protegidos por permissões</footer>
   </div>

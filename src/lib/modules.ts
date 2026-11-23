@@ -91,11 +91,7 @@ export const modules:BusinessModule[]=[
  {key:'status',label:'Situação',type:'select',options:['planejada','ativa','pausada','encerrada']},
  {key:'notes',label:'Objetivos e resultados',type:'textarea'}
 ]},
-{key:'documents',table:'documents',title:'Base de conhecimento',singular:'Documento',description:'Políticas, POPs e FAQs para o agente RAG.',icon:'▧',readRoles:all,writeRoles:manage,fields:[
- {key:'title',label:'Título',required:true},{key:'category',label:'Categoria',type:'select',options:['faq','comercial','operacao','qualidade','financeiro','juridico','outros']},
- {key:'visibility',label:'Acesso',type:'select',options:['equipe','gestao']},
- {key:'content',label:'Conteúdo textual / Markdown',type:'textarea',required:true}
-]}
+{key:'dre',table:'orders',title:'DRE gerencial',singular:'Demonstrativo de resultado',description:'Receitas, custos, despesas e resultado por competência.',icon:'▥',readRoles:money,writeRoles:[],fields:[]}
 ];
 export function getModule(key:string){return modules.find(m=>m.key===key)}
 export const REFS:{[key:string]:{table:string;label:string}}={
