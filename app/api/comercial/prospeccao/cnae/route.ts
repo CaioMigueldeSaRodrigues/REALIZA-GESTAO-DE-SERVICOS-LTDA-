@@ -24,7 +24,19 @@ async function tokenFor(json:string){
  return data.access_token;
 }
 type Row={f:Array<{v:string|null}>};
-const field=(r:Row,n:number)=>String(r.f[n]?.v??'');
+const field=(r:Row,n:number)=>String(r.f[n]?.v??'').trim();
+const phone=(ddd:string,number:string)=>{
+ const d=ddd.replace(/\D/g,''),v=number.replace(/\D/g,'');
+ return v.length>=8&&v.length<=9&&d.length===2?d+v:'';
+};
+const capital=(x:string)=>{
+ const n=Number(x);
+ return x&&Number.isFinite(n)&&n>=0&&n<1e15?Math.round(n*100)/100:null;
+};
+const coord=(x:string,bound:number)=>{
+ const n=Number(x);
+ return x&&Number.isFinite(n)&&Math.abs(n)<=bound?n:null;
+};
 export async function POST(request:Request){
  try{
   const db=await serverDb();
@@ -45,13 +57,18 @@ export async function POST(request:Request){
    return Response.json({error:'BigQuery ainda não configurado. Configure credenciais e visão CNPJ padronizada.'},{status:503});
   }
   const today=new Date().toISOString().slice(0,10);
-  const start=new Date();start.setUTCDate(start.getUTCDate()-7);
+  const start=new Date();start.setUTCDate(start.getUTCDate()-6);
   const since=start.toISOString().slice(0,10);
   const q=[
    'SELECT CAST(cnpj AS STRING), CAST(razao_social AS STRING),',
    'CAST(nome_fantasia AS STRING), CAST(cnae_principal AS STRING),',
    'CAST(municipio AS STRING), CAST(uf AS STRING),',
-   'CAST(data_abertura AS STRING), CAST(situacao AS STRING), CAST(snapshot_em AS STRING)',
+   'CAST(data_abertura AS STRING), CAST(situacao AS STRING), CAST(snapshot_em AS STRING),',
+   'CAST(tipo_logradouro AS STRING), CAST(logradouro AS STRING),',
+   'CAST(numero AS STRING), CAST(complemento AS STRING), CAST(bairro AS STRING),',
+   'CAST(cep AS STRING), CAST(ddd1 AS STRING), CAST(telefone1 AS STRING),',
+   'CAST(ddd2 AS STRING), CAST(telefone2 AS STRING), CAST(correio_eletronico AS STRING),',
+   'CAST(capital_social AS STRING), CAST(latitude AS STRING), CAST(longitude AS STRING)',
    'FROM '+String.fromCharCode(96)+view+String.fromCharCode(96),
    "WHERE uf = 'MG'",
    "AND data_abertura BETWEEN @start AND CURRENT_DATE('America/Sao_Paulo')",
@@ -71,12 +88,25 @@ export async function POST(request:Request){
   const data=await res.json() as {jobComplete?:boolean;errors?:unknown[];rows?:Row[]};
   if(!data.jobComplete||data.errors?.length)return Response.json({error:'Consulta não concluída. Nenhum resultado apresentado.'},{status:502});
   const rows=(data.rows||[]).map(r=>({
-    cnpj:field(r,0),name:field(r,1),trade_name:field(r,2),cnae:field(r,3),
-    city:field(r,4),state:field(r,5),opened_on:field(r,6),
-    registration_status:field(r,7),snapshot_on:field(r,8)
-  })).filter(x=>/^[0-9]{14}$/.test(x.cnpj)&&x.state==='MG'
+    cnpj:field(r,0).toUpperCase(),name:field(r,1),trade_name:field(r,2),cnae:field(r,3),
+    city:field(r,4),state:field(r,5).toUpperCase(),opened_on:field(r,6),
+    registration_status:field(r,7),snapshot_on:field(r,8),
+    street_type:field(r,9),street:field(r,10),street_number:field(r,11),
+    address_extra:field(r,12),neighborhood:field(r,13),postal_code:field(r,14).replace(/\D/g,'').slice(0,8),
+    phone:phone(field(r,15),field(r,16)),secondary_phone:phone(field(r,17),field(r,18)),
+    contact_email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field(r,19))?field(r,19).toLowerCase():'',
+    capital_social:capital(field(r,20)),
+    latitude:coord(field(r,21),90),longitude:coord(field(r,22),180)
+  })).filter(x=>/^[0-9A-Z]{12}[0-9]{2}$/.test(x.cnpj)&&x.state==='MG'
     &&x.opened_on.slice(0,10)>=since&&x.opened_on.slice(0,10)<=today);
-  return Response.json({rows,message:rows.length?'Empresas com abertura registrada no período. Verifique a atualização da fonte antes de contatar.':'Nenhuma abertura localizada. A fonte pode apresentar defasagem.'},
+  const snapshotDates=rows.map(r=>r.snapshot_on.slice(0,10)).filter(Boolean).sort();
+  const latestSnapshot=snapshotDates.at(-1)||null;
+  return Response.json({
+   rows,source_updated_on:latestSnapshot,
+   message:rows.length
+    ?'Dados cadastrais públicos localizados. Contatos, capital social e geolocalização aparecem apenas quando constam na fonte.'
+    :'Nenhuma abertura localizada na janela disponível. A fonte pública pode apresentar defasagem.'
+  },
     {headers:{'Cache-Control':'no-store'}});
  }catch(e){
   console.error('CNAE search error',e instanceof Error?e.name:'unknown');
