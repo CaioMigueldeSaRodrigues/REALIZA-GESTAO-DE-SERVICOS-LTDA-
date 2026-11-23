@@ -20,15 +20,20 @@ const brazilStates:Record<string,string>={
  RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'
 };
 const maxPins=16;
+const minasView={lat:-18.5,lon:-44.4,zoom:6} as const;
+const isMinas=(state:string)=>['mg','minas gerais'].includes(normalize(state));
 
 export function CityHeatMap({cities,metric,onSelect}:{cities:HeatCity[];metric:'demands'|'volume';onSelect?:(city:string)=>void}){
  const [pins,setPins]=useState<Pin[]>([]);
  const [pending,setPending]=useState(false);
  const [size,setSize]=useState({w:720,h:360});
- const [center,setCenter]=useState({lat:-14.7,lon:-53.2,zoom:4});
+ const [center,setCenter]=useState({...minasView});
  const mapRef=useRef<HTMLDivElement|null>(null);
  const citiesKey=useMemo(()=>cities.map(c=>key(c)).sort().join('~'),[cities]);
- const selected=cities.filter(c=>c.city&&c.city!=='Não informado').sort((a,b)=>b.demands-a.demands).slice(0,maxPins);
+ const selected=cities
+  .filter(c=>isMinas(c.state)&&c.city&&c.city!=='Não informado')
+  .sort((a,b)=>Number(b[metric])-Number(a[metric]))
+  .slice(0,maxPins);
  useEffect(()=>{
   const node=mapRef.current;
   if(!node)return;
@@ -98,7 +103,7 @@ export function CityHeatMap({cities,metric,onSelect}:{cities:HeatCity[];metric:'
   onSelect?.(pin.city);
  }
  return <div>
-  <div className="heatmap-legend"><span><i className="heat-dot heat-low"/> Menor concentração</span><span><i className="heat-dot heat-high"/> Maior concentração</span><span>Agregado municipal · sem localização de clientes</span></div>
+  <div className="heatmap-legend"><span><i className="heat-dot heat-low"/> Menor concentração</span><span><i className="heat-dot heat-high"/> Maior concentração</span><span>Apenas MG · raio de atendimento ainda não definido</span></div>
   <div ref={mapRef} className="city-map" style={{height:size.h}}>
    {tiles.map(t=><img key={t.x+'/'+t.y+'/'+center.zoom}
     src={t.src} alt="" loading="lazy" referrerPolicy="strict-origin-when-cross-origin"
@@ -124,15 +129,16 @@ export function CityHeatMap({cities,metric,onSelect}:{cities:HeatCity[];metric:'
    <div className="city-map-controls">
     <button type="button" onClick={()=>zoom(1)} aria-label="Ampliar mapa">+</button>
     <button type="button" onClick={()=>zoom(-1)} aria-label="Reduzir mapa">−</button>
-    <button type="button" onClick={()=>setCenter({lat:-14.7,lon:-53.2,zoom:4})} aria-label="Mostrar Brasil">⌂</button>
+    <button type="button" onClick={()=>setCenter({...minasView})} aria-label="Mostrar Minas Gerais">⌂</button>
    </div>
    {pending&&<span className="city-map-loading">Localizando municípios…</span>}
    <div className="city-map-attribution">
     © <a target="_blank" rel="noopener noreferrer" href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · <a target="_blank" rel="noopener noreferrer" href="https://open-meteo.com/">Geocodificação Open-Meteo</a>
    </div>
   </div>
-  {locations.length===0&&!pending&&<p className="dashboard-hint">Nenhuma cidade pôde ser localizada no mapa. Consulte os municípios no ranking abaixo.</p>}
+  {selected.length===0&&<p className="dashboard-hint">Ainda não há demanda com município e UF MG confirmados. O mapa permanecerá sem marcadores até a entrada de registros válidos.</p>}
+  {selected.length>0&&locations.length===0&&!pending&&<p className="dashboard-hint">Não foi possível verificar a localização dos municípios de MG. Consulte o ranking abaixo.</p>}
   {unresolved>0&&!pending&&<p className="dashboard-hint">{unresolved} município(s) sem localização verificada permanecem no ranking; não foram inventadas coordenadas.</p>}
-  <p className="dashboard-hint">Concentração baseada em dados registrados. O círculo representa o centro do município, não a posição de uma entrega.</p>
+  <p className="dashboard-hint">Visualização restrita a municípios de Minas Gerais identificados pela UF. Os círculos não definem a área de cobertura da empresa.</p>
  </div>;
 }

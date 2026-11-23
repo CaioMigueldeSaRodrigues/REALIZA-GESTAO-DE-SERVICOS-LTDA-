@@ -30,7 +30,7 @@ function toCityRows(rows:CityDay[]){
  const byCity=new Map<string,HeatCity>();
  for(const r of rows){
   const city=r.city?.trim()||'Não informado';
-  const code=normalize(city);
+  const code=normalize(city)+'|'+normalize(r.state||'');
   const prev=byCity.get(code)||{city,state:r.state||'',demands:0,volume:0,orders:0,value:0};
   prev.demands+=num(r.demands);
   prev.volume+=num(r.demand_m3);
@@ -108,7 +108,9 @@ export function Overview({role}:{role:string}){
   setBusy(false);
  },[db,span]);
  useEffect(()=>{void load()},[load,tick]);
- const cities=toCityRows(cityRows);
+ // Dados do restante do Brasil permanecem nos indicadores gerais.
+ // O recorte geográfico é exclusivamente MG, até definição formal do raio de atendimento.
+ const cities=toCityRows(cityRows).filter(c=>['mg','minas gerais'].includes(normalize(c.state)));
  const demands=sum(cityRows,'demands');
  const demandVolume=sum(cityRows,'demand_m3');
  const proposals=sum(cityRows,'proposals');
@@ -144,7 +146,7 @@ export function Overview({role}:{role:string}){
     <button className="btn light" type="button" disabled={busy} onClick={()=>setTick(x=>x+1)}>↻ Atualizar</button>
    </div>
   </div>
-  <div className="dashboard-banner">Dados reais · período: últimos {periodOptions[span]} · atualizado em {dateBr(new Date().toISOString())} · perfil {role}.
+  <div className="dashboard-banner">Dados reais · indicadores gerais sem restrição de UF · mapa comercial somente MG · período: últimos {periodOptions[span]} · atualizado em {dateBr(new Date().toISOString())} · perfil {role}.
    Os valores de propostas e OS não representam dinheiro recebido.</div>
   {warnings.length>0&&<div className="notice error" role="alert">Falhas ou limites na consulta: {warnings.join(' · ')}. Indicadores afetados podem estar incompletos.</div>}
   {busy?<div className="table-placeholder"><div className="spinner"/> Consultando indicadores...</div>:<>
@@ -187,8 +189,8 @@ export function Overview({role}:{role:string}){
    </div>
    <div className="dashboard-two">
     <section className="panel">
-     <div className="dashboard-panel-head"><div><span className="eyebrow">INTELIGÊNCIA GEOGRÁFICA</span><h2>Mapa de calor comercial</h2>
-      <small>Áreas com maior concentração de oportunidades registradas</small></div>
+     <div className="dashboard-panel-head"><div><span className="eyebrow">INTELIGÊNCIA GEOGRÁFICA</span><h2>Mapa de calor comercial · MG</h2>
+      <small>Minas Gerais · visualização provisória até confirmação do raio de atendimento</small></div>
       <div className="dashboard-filters"><select aria-label="Métrica do mapa" value={metric} onChange={e=>setMetric(e.target.value as 'demands'|'volume')}>
        <option value="demands">Demandas</option><option value="volume">Volume (m³)</option>
       </select></div>
@@ -197,14 +199,14 @@ export function Overview({role}:{role:string}){
      {focusedCity&&<div className="dashboard-banner" style={{marginTop:12}}>Município: <strong>{focusedCity.city}</strong> · {numberBr(focusedCity.demands)} demandas · {numberBr(focusedCity.volume)} m³</div>}
     </section>
     <section className="panel">
-     <PanelTitle eyebrow="RANKING REGIONAL" title="Concentração por município" subtitle="Dados comerciais registrados · sem clientes individuais"/>
+     <PanelTitle eyebrow="RANKING REGIONAL · MG" title="Municípios mineiros" subtitle="Somente registros com UF MG confirmada · sem clientes individuais"/>
      {mainCities.length? <div className="dashboard-region-list">
       {mainCities.map((c,i)=><button className="dashboard-region-row" type="button" key={c.city+'|'+c.state} onClick={()=>setCityFocus(c.city)}>
        <span><strong>{i+1}.</strong> {c.city}{c.state?' / '+c.state:''}<small style={{display:'block'}}> {numberBr(c.volume)} m³ solicitados</small></span>
        <strong>{numberBr(c.demands)} demandas</strong>
       </button>)}
-     </div>:<div className="dashboard-empty">Aguardando solicitações com município informado.</div>}
-     <Info>Um lead gerado automaticamente pelo portal não conta novamente como oportunidade. Municípios sem coordenadas continuam no ranking.</Info>
+     </div>:<div className="dashboard-empty">Nenhuma demanda registrada em Minas Gerais com UF confirmada no período.</div>}
+     <Info>Um lead gerado automaticamente pelo portal não conta novamente como oportunidade. Municípios mineiros sem coordenadas continuam no ranking; registros de outras UFs não são exibidos nesta seção. O mapa não representa a área de atendimento.</Info>
     </section>
    </div>
    <div className="dashboard-two">
