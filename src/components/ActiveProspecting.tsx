@@ -37,7 +37,7 @@ function CompanyDetails({company:r}:{company:ProspectRecord}){
  const secondary=String(r.secondary_phone||'').replace(/\D/g,'');
  const email=r.contact_email||'';
  return <div className="prospect-details">
-  <div><small>Endereço cadastrado</small><strong>{available(formatAddress(r))}</strong></div>
+  <div><small>Endereço cadastrado</small><strong>{r.street?formatAddress(r):'Logradouro não informado · '+available([r.city,r.state].filter(Boolean).join(' / '))}</strong></div>
   <div><small>Contato telefônico público</small>
    <strong>{phone?<a href={'tel:+55'+phone}>{phone}</a>:'Não informado'}</strong>
    {secondary&&<span>Alternativo: <a href={'tel:+55'+secondary}>{secondary}</a></span>}
