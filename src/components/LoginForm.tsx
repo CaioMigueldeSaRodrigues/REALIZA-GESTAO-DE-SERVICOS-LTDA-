@@ -27,6 +27,16 @@ export function LoginForm({recovery=false}:{recovery?:boolean}){
   }catch(err){setMessage(err instanceof Error?err.message:'Não foi possível concluir a solicitação.')}
   finally{setBusy(false)}
  }
+ async function resend(){
+  if(!email.trim()){setMessage('Informe o e-mail antes de solicitar uma nova confirmação.');return}
+  setBusy(true);setMessage('');
+  try{
+   const {error}=await browserDb().auth.resend({type:'signup',email:email.trim().toLowerCase()});
+   if(error)throw error;
+   setMessage('Se houver um cadastro aguardando validação, enviaremos uma nova confirmação para esse e-mail.');
+  }catch(e){setMessage(e instanceof Error?e.message:'Não foi possível reenviar a confirmação.')}
+  finally{setBusy(false)}
+ }
  return <main className="auth-page">
   <Link className="brand small" href="/login"><span className="brand-mark">◉</span> REALIZA <small>PLATAFORMA INTEGRADA</small></Link>
   <form className="auth-card" onSubmit={submit}>
@@ -39,6 +49,7 @@ export function LoginForm({recovery=false}:{recovery?:boolean}){
    <button className="btn primary" disabled={busy} type="submit">{busy?'Processando...':recovery?(hasSession?'Atualizar senha':'Enviar recuperação'):'Entrar na plataforma'}</button>
    {message&&<div role="status" className="notice">{message}</div>}
    <div className="auth-links">{recovery?<Link href="/login">Voltar ao login</Link>:<Link href="/recuperar">Esqueci minha senha</Link>}</div>
+   {!recovery&&<div className="auth-links"><button type="button" className="btn light" disabled={busy} onClick={()=>void resend()}>Reenviar confirmação de e-mail</button></div>}
    {!recovery&&<div className="registration-cta"><span>É cliente e ainda não tem acesso?</span><Link className="btn light" href="/cadastro">Criar cadastro de cliente</Link><small>Para funcionários: o acesso é concedido somente pela administração.</small></div>}
   </form>
  </main>;
