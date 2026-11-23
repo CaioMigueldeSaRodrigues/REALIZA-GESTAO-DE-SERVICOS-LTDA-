@@ -20,7 +20,7 @@ export async function POST(req:Request){
   const {data:{user}}=await db.auth.getUser();
   if(!user)return Response.json({error:'Sessão necessária.'},{status:401});
   const {data:profile}=await db.from('profiles').select('role,active').eq('id',user.id).single();
-  if(!profile?.active)return Response.json({error:'Conta sem permissão.'},{status:403});
+  if(!profile?.active||profile.role==='viewer_ops_finance')return Response.json({error:'Conta sem permissão para o agente de IA.'},{status:403});
   const raw=await req.text();
   if(raw.length>4000)return Response.json({error:'Pergunta muito extensa.'},{status:413});
   const question=String((JSON.parse(raw) as {question?:unknown}).question||'').trim().slice(0,1500);
