@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import {useState} from 'react';
 import {browserDb} from '@/lib/supabase-browser';
+import {authRedirectTo,REALIZA_SITE_URL} from '@/lib/auth-redirect';
 import {AddressFields,emptyAddress,validAddress} from '@/components/AddressFields';
 export function CustomerSignUp(){
  const [name,setName]=useState(''),[phone,setPhone]=useState(''),[email,setEmail]=useState('');
@@ -19,7 +20,7 @@ export function CustomerSignUp(){
   try{
    const {error}=await browserDb().auth.signUp({
     email:email.trim().toLowerCase(),password,
-    options:{emailRedirectTo:window.location.origin+'/painel',
+    options:{emailRedirectTo:authRedirectTo('/painel'),
      data:{account_kind:'customer',name:name.trim(),phone:phone.trim(),person_type:kind,...address}}
    });
    if(error)throw error;
@@ -44,6 +45,7 @@ export function CustomerSignUp(){
     <button className="btn primary" type="submit" disabled={busy}>{busy?'Criando conta...':'Criar conta de cliente'}</button>
    </form>}
    {message&&<p className="notice" role="status">{message}</p>}
+   {done&&<p>Se a confirmação não abrir a plataforma automaticamente, <a href={REALIZA_SITE_URL+'/login'}>acesse a REALIZA por este link</a> e entre com seu e-mail e senha.</p>}
    <div className="auth-links"><Link href="/login">Já tenho cadastro · Entrar</Link></div>
   </div>
  </main>;

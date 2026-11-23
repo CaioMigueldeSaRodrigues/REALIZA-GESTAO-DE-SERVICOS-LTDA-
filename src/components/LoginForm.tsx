@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {browserDb} from '@/lib/supabase-browser';
+import {authRedirectTo} from '@/lib/auth-redirect';
 export function LoginForm({recovery=false}:{recovery?:boolean}){
  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[newPassword,setNewPassword]=useState('');
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[hasSession,setHasSession]=useState(false);
@@ -16,7 +17,7 @@ export function LoginForm({recovery=false}:{recovery?:boolean}){
      if(error)throw error;
      setMessage('Senha atualizada. Acesse o painel com a nova senha.');
     }else{
-     const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/recuperar'});
+     const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:authRedirectTo('/recuperar')});
      if(error)throw error;
      setMessage('Se o e-mail estiver cadastrado, você receberá instruções de recuperação.');
     }
@@ -31,7 +32,7 @@ export function LoginForm({recovery=false}:{recovery?:boolean}){
   if(!email.trim()){setMessage('Informe o e-mail antes de solicitar uma nova confirmação.');return}
   setBusy(true);setMessage('');
   try{
-   const {error}=await browserDb().auth.resend({type:'signup',email:email.trim().toLowerCase()});
+   const {error}=await browserDb().auth.resend({type:'signup',email:email.trim().toLowerCase(),options:{emailRedirectTo:authRedirectTo('/painel')}});
    if(error)throw error;
    setMessage('Se houver um cadastro aguardando validação, enviaremos uma nova confirmação para esse e-mail.');
   }catch(e){setMessage(e instanceof Error?e.message:'Não foi possível reenviar a confirmação.')}

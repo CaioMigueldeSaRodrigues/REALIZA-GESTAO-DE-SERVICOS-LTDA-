@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import {publicSupabaseConfig} from '@/lib/public-supabase-config';
 export const dynamic='force-dynamic';
-const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const base = process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://')?process.env.NEXT_PUBLIC_SITE_URL:'https://realiza-gestao-de-servicos-ltda.vercel.app';
 export const metadata: Metadata = {
   metadataBase: new URL(base),
   title: { default: 'Águaserv | REALIZA Gestão de Serviços', template: '%s | Águaserv REALIZA' },
