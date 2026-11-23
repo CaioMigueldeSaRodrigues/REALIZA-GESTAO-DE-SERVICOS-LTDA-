@@ -22,7 +22,14 @@ test('inicia cenário fictício completo e sem chamadas externas',()=>{
  assert.doesNotMatch(ui,/\.from\(|\.rpc\(|\.insert\(|\.upsert\(/);
  assert.match(ui,/Simular recebimento/);
  assert.match(ui,/Registrar uma viagem/);
- assert.match(ui,/Criar solicitação simulada/);
+ const form=readFileSync(new URL('../src/components/DemoCustomerRequestForm.tsx',import.meta.url),'utf8');
+ assert.match(form,/Enviar solicitação fictícia/);
+ assert.match(form,/Endereço da entrega/);
+ assert.match(form,/Volume desejado/);
+ assert.match(form,/Finalidade/);
+ assert.match(ui,/Minhas solicitações/);
+ assert.match(ui,/DemoCustomerRequestForm/);
+ assert.doesNotMatch(form,/\.from\(|\.rpc\(|\.insert\(|\.upsert\(/);
 });
 test('as transições ocorrem em sequência e exigem preço e caminhão',()=>{
  let s=sim.createDemoState(date);
@@ -75,4 +82,26 @@ test('rejeita entradas inválidas e cenários isolados podem reiniciar',()=>{
  const fresh=sim.createDemoState(date);
  assert.equal(fresh.orders.length,4);
  assert.equal(fresh.events.length,1);
+});
+
+test('solicitação de demonstração preserva cliente, endereço e contato sem banco',()=>{
+ let state=sim.createDemoState(date);
+ state=sim.addOrder(state,{
+  company:'Cliente de Apresentação',
+  city:'Pouso Alegre / MG',use:'Abastecimento de reservatório',volume:32,
+  contactPhone:'(35) 99999-0000',contactEmail:'cliente@exemplo.com',
+  deliveryAddress:'Rua Exemplo, 100 · Centro · Pouso Alegre / MG · CEP 37550-000',
+  notes:'Entrada principal (fictícia)'
+ },date);
+ const r=state.orders[0];
+ assert.equal(r.origin,'cliente_apresentacao');
+ assert.equal(r.status,'recebida');
+ assert.equal(r.contactPhone,'(35) 99999-0000');
+ assert.equal(r.contactEmail,'cliente@exemplo.com');
+ assert.match(r.deliveryAddress,/Pouso Alegre/);
+ assert.equal(r.notes,'Entrada principal (fictícia)');
+ assert.equal(state.orders.length,5);
+ state=sim.advanceOrder(state,r.id,{},date);
+ assert.equal(state.orders[0].status,'analise');
+ assert.equal(state.orders[0].contactPhone,'(35) 99999-0000');
 });
