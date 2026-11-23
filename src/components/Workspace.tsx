@@ -11,12 +11,13 @@ import {Assistant} from '@/components/Assistant';
 import {RoutePlanner} from '@/components/RoutePlanner';
 import {OperationalPipeline} from '@/components/OperationalPipeline';
 import {CustomerPortal} from '@/components/CustomerPortal';
+import {DemoWorkspace} from '@/components/DemoWorkspace';
 type Profile={id:string;name:string;role:string;active:boolean;demo_expires_at?:string|null;admin_invitation_pending?:boolean};
 export function Workspace(){
  const [profile,setProfile]=useState<Profile|null>(null),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[tab,setTab]=useState('pipeline'),[sidebar,setSidebar]=useState(false);
- const [adminAccess,setAdminAccess]=useState<{expires_at:string}|null>(null);
- const [adminMode,setAdminMode]=useState(false);
+ const [scope,setScope]=useState<'owner'|'demo'|null>(null);
+ const [adminMode,setAdminMode]=useState(true);
  useEffect(()=>{
   let cancelled=false;
   async function init(){
@@ -46,16 +47,12 @@ export function Workspace(){
     if(data.demo_expires_at&&new Date(data.demo_expires_at).getTime()<=Date.now()){
      throw new Error('A conta de homologação expirou. Gere uma nova conta temporária para testar.');
     }
-    const {data:grants,error:grantError}=await db.rpc('my_temporary_admin_access');
-    if(grantError)throw grantError;
-    const grant=Array.isArray(grants)&&grants.length>0?grants[0]:null;
-    if(!cancelled){
-     setProfile(data);
-     if(grant?.granted_role==='admin'&&grant.expires_at){
-      setAdminAccess({expires_at:String(grant.expires_at)});
-      setAdminMode(true);
-     }
-    }
+    // Única autoridade de autorização: RPC verificada no servidor.
+    // Não usamos e-mail, metadata ou função informada pelo navegador para conceder privilégios.
+    const {data:resolvedScope,error:scopeError}=await db.rpc('my_workspace_scope');
+    if(scopeError)throw scopeError;
+    if(resolvedScope!=='owner'&&resolvedScope!=='demo')throw new Error('Escopo de acesso não autorizado.');
+    if(!cancelled){setProfile(data);setScope(resolvedScope)}
    }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Não foi possível carregar sua conta.')}
    finally{if(!cancelled)setLoading(false)}
   }init();
@@ -66,8 +63,10 @@ export function Workspace(){
  const change=(name:string)=>{setTab(name);setSidebar(false);window.scrollTo(0,0)};
  if(loading)return <main className="screen-center"><div className="spinner"/> <p>Carregando ambiente seguro...</p></main>;
  if(error)return <main className="screen-center"><div className="error-panel"><h2>Verificação de acesso</h2><p>{error}</p><Link className="btn primary" href="/login">Voltar ao acesso</Link></div></main>;
- if(!profile)return null;
- const isDual=profile.role==='cliente'&&!!adminAccess&&new Date(adminAccess.expires_at).getTime()>Date.now();
+ if(!profile||!scope)return null;
+ // Demais contas: painel isolado, sintético, sem consultas ao ERP.
+ if(scope==='demo')return <DemoWorkspace name={profile.name}/>;
+ const isDual=scope==='owner'&&profile.role==='cliente';
  const effectiveRole=isDual&&adminMode?'admin':profile.role;
  if(effectiveRole==='cliente'){
   return <div className="workspace-main" style={{minHeight:'100vh'}}>
@@ -106,7 +105,7 @@ export function Workspace(){
      Nenhuma alteração, cobrança ou despacho está autorizado.
     </div>}
     {isDual&&<div role="status" className="notice" style={{marginBottom:18}}>
-      Acesso ADM de homologação · Conta de cliente preservada · Validade até {new Date(adminAccess!.expires_at).toLocaleString('pt-BR')}.
+      Acesso completo de titular · Conta de cliente preservada · Demais cadastros veem somente a apresentação.
     </div>}
     {profile.demo_expires_at&&<div role="status" className="notice" style={{marginBottom:18}}>
      Perfil temporário de homologação · Expiração: {new Date(profile.demo_expires_at).toLocaleString('pt-BR')}
