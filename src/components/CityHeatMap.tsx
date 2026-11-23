@@ -20,7 +20,7 @@ const brazilStates:Record<string,string>={
  RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'
 };
 const maxPins=16;
-const minasView={lat:-18.5,lon:-44.4,zoom:6} as const;
+const minasView:{lat:number;lon:number;zoom:number}={lat:-18.5,lon:-44.4,zoom:6};
 const isMinas=(state:string)=>['mg','minas gerais'].includes(normalize(state));
 
 export function CityHeatMap({cities,metric,onSelect}:{cities:HeatCity[];metric:'demands'|'volume';onSelect?:(city:string)=>void}){
