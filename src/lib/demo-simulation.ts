@@ -6,6 +6,7 @@ export type DemoStep='recebida'|'analise'|'proposta'|'aprovada'|'programada'|'en
 export type DemoCategory='direto'|'operacional';
 export type DemoOrder={
  id:string;company:string;city:string;use:string;volume:number;unitPrice:number;
+ contactPhone?:string;contactEmail?:string;deliveryAddress?:string;notes?:string;origin?:'cliente_apresentacao'|'cenario_inicial';
  status:DemoStep;truckId:string|null;deliveredM3:number;paid:boolean;
  createdMonth:string;deliveredMonth:string|null;
 };
@@ -51,14 +52,20 @@ export function createDemoState(now:Date=new Date()):DemoState{
 function event(state:DemoState,description:string):DemoState{
  return {...state,events:[description,...state.events].slice(0,15)};
 }
-export function addOrder(state:DemoState,params:{company:string;city:string;use:string;volume:number},now:Date=new Date()):DemoState{
+export function addOrder(state:DemoState,params:{
+ company:string;city:string;use:string;volume:number;
+ contactPhone?:string;contactEmail?:string;deliveryAddress?:string;notes?:string
+},now:Date=new Date()):DemoState{
  const company=params.company.trim(),city=params.city.trim(),use=params.use.trim();
  const volume=Number(params.volume);
  if(company.length<3||city.length<2||!use||!Number.isFinite(volume)||volume<=0||volume>10000)
   throw new Error('Informe empresa fictícia, cidade de MG, finalidade e volume válido (até 10.000 m³).');
  const id='DEMO-'+String(state.nextId).padStart(3,'0');
  const order:DemoOrder={id,company,city,use,volume,unitPrice:0,status:'recebida',
-  truckId:null,deliveredM3:0,paid:false,createdMonth:monthCode(now),deliveredMonth:null};
+  truckId:null,deliveredM3:0,paid:false,createdMonth:monthCode(now),deliveredMonth:null,
+  origin:'cliente_apresentacao',contactPhone:params.contactPhone?.trim(),
+  contactEmail:params.contactEmail?.trim(),deliveryAddress:params.deliveryAddress?.trim(),
+  notes:params.notes?.trim()};
  return event({...state,orders:[order,...state.orders],nextId:state.nextId+1},
   'Solicitação '+id+' criada para '+company+'.');
 }
