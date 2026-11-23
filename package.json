@@ -11,7 +11,8 @@
     "start": "next start",
     "check": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
-    "admin:demo": "node --env-file=.env.local scripts/create-demo-admin.mjs"
+    "admin:demo": "node --env-file=.env.local scripts/create-demo-admin.mjs",
+    "apresentacao:edmilson": "node --env-file=.env.local scripts/create-edmilson-viewer.mjs"
   },
   "dependencies": {
     "next": "16.4.6",

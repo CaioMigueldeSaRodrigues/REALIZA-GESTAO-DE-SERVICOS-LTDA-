@@ -77,6 +77,7 @@ export function Workspace(){
    <div className="workspace-content"><CustomerPortal name={profile.name}/></div>
   </div>;
  }
+ const readOnly=effectiveRole==='viewer_ops_finance';
  const available=modules.filter(m=>canAccess(effectiveRole,m.readRoles));
  return <div className="workspace">
   <aside className={'sidebar '+(sidebar?'sidebar-open':'')}>
@@ -84,12 +85,12 @@ export function Workspace(){
    <div className="sidebar-caption">ESPAÇO DE TRABALHO</div>
    {isDual&&<button className="nav-item" onClick={()=>{setAdminMode(false);setSidebar(false)}}><span>↩</span> Voltar ao portal do cliente</button>}
    <nav className="nav-group">
-    {effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='overview'?'selected':'')} onClick={()=>change('overview')}><span>▦</span> Visão geral</button>}
+    {!readOnly&&effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='overview'?'selected':'')} onClick={()=>change('overview')}><span>▦</span> Visão geral</button>}
     <button className={'nav-item '+(tab==='pipeline'?'selected':'')} onClick={()=>change('pipeline')}><span>⇄</span> Fluxo operacional</button>
     {['admin','gestor','comercial'].includes(effectiveRole)&&<button className={'nav-item '+(tab==='prospecting'?'selected':'')} onClick={()=>change('prospecting')}><span>◎</span> Prospecção ativa</button>}
     {available.map(m=><button key={m.key} className={'nav-item '+(tab===m.key?'selected':'')} onClick={()=>change(m.key)}><span>{m.icon}</span>{m.title}</button>)}
-    {effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='route'?'selected':'')} onClick={()=>change('route')}><span>⌁</span> Programação logística</button>}
-    {effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='ai'?'selected':'')} onClick={()=>change('ai')}><span>✦</span> Agente de IA</button>}
+    {!readOnly&&effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='route'?'selected':'')} onClick={()=>change('route')}><span>⌁</span> Programação logística</button>}
+    {!readOnly&&effectiveRole!=='motorista'&&<button className={'nav-item '+(tab==='ai'?'selected':'')} onClick={()=>change('ai')}><span>✦</span> Agente de IA</button>}
    </nav>
    <div className="sidebar-footer"><div className="user-chip"><span className="avatar">{profile.name.slice(0,1).toUpperCase()}</span><div><strong>{profile.name}</strong><small>{effectiveRole}{isDual?' · homologação':''}</small></div></div><button className="nav-item signout" onClick={signOut}>↪ Sair da conta</button></div>
   </aside>
@@ -100,13 +101,17 @@ export function Workspace(){
     <div className="topbar-right"><span className="status-dot"/> Ambiente privado <span className="top-avatar">{profile.name[0]?.toUpperCase()}</span></div>
    </header>
    <main className="workspace-content">
+    {readOnly&&<div role="status" className="notice" style={{marginBottom:18}}>
+     Acesso temporário para apresentação · Somente leitura operacional e financeira.
+     Nenhuma alteração, cobrança ou despacho está autorizado.
+    </div>}
     {isDual&&<div role="status" className="notice" style={{marginBottom:18}}>
       Acesso ADM de homologação · Conta de cliente preservada · Validade até {new Date(adminAccess!.expires_at).toLocaleString('pt-BR')}.
     </div>}
     {profile.demo_expires_at&&<div role="status" className="notice" style={{marginBottom:18}}>
      Perfil temporário de homologação · Expiração: {new Date(profile.demo_expires_at).toLocaleString('pt-BR')}
     </div>}
-    {tab==='overview'?<Overview role={effectiveRole}/>:tab==='pipeline'?<OperationalPipeline role={effectiveRole}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:tab==='dre'?<DRE role={effectiveRole}/>:tab==='prospecting'?<ActiveProspecting/>:<ModuleTable key={tab} moduleKey={tab} role={effectiveRole}/>}
+    {readOnly&&!['pipeline','orders','vehicles','water_sources','receivables','payables','expenses','dre'].includes(tab)?<OperationalPipeline role={effectiveRole}/>:tab==='overview'?<Overview role={effectiveRole}/>:tab==='pipeline'?<OperationalPipeline role={effectiveRole}/>:tab==='route'?<RoutePlanner/>:tab==='ai'?<Assistant/>:tab==='dre'?<DRE role={effectiveRole}/>:tab==='prospecting'?<ActiveProspecting/>:<ModuleTable key={tab} moduleKey={tab} role={effectiveRole}/>}
    </main>
    <footer className="workspace-footer">REALIZA Gestão de Serviços • Plataforma própria • Dados protegidos por permissões</footer>
   </div>

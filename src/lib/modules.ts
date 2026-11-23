@@ -32,7 +32,7 @@ export const modules:BusinessModule[]=[
  {key:'status',label:'Etapa',type:'select',options:['rascunho','enviada','aprovada','rejeitada']},
  {key:'notes',label:'Condições comerciais',type:'textarea'}
 ]},
-{key:'orders',table:'orders',title:'Ordens de serviço',singular:'Ordem de serviço',description:'Da programação ao comprovante de entrega.',icon:'▣',readRoles:[...all,'motorista'],writeRoles:ops,fields:[
+{key:'orders',table:'orders',title:'Ordens de serviço',singular:'Ordem de serviço',description:'Da programação ao comprovante de entrega.',icon:'▣',readRoles:[...all,'motorista','viewer_ops_finance'],writeRoles:ops,fields:[
  {key:'client_id',label:'Cliente',type:'ref',ref:'clients',required:true},{key:'quote_id',label:'Proposta vinculada',type:'ref',ref:'quotes'},
  {key:'vehicle_id',label:'Caminhão',type:'ref',ref:'vehicles'},{key:'driver_profile_id',label:'Motorista / usuário',type:'ref',ref:'profiles'},
  {key:'water_source_id',label:'Origem da água',type:'ref',ref:'water_sources'},
@@ -46,7 +46,7 @@ export const modules:BusinessModule[]=[
  {key:'payment_mode',label:'Condição de pagamento',type:'select',options:['antecipado','faturado']},
  {key:'notes',label:'Instruções operacionais',type:'textarea'}
 ]},
-{key:'vehicles',table:'vehicles',title:'Frota',singular:'Caminhão',description:'Capacidade, placas, manutenção e disponibilidade.',icon:'▰',readRoles:all,writeRoles:ops,fields:[
+{key:'vehicles',table:'vehicles',title:'Frota',singular:'Caminhão',description:'Capacidade, placas, manutenção e disponibilidade.',icon:'▰',readRoles:[...all,'viewer_ops_finance'],writeRoles:ops,fields:[
  {key:'label',label:'Identificação',required:true},{key:'plate',label:'Placa',required:true},
  {key:'capacity_m3',label:'Capacidade (m³)',type:'number',required:true,step:'0.01'},
  {key:'odometer_km',label:'Odômetro (km)',type:'number'},
@@ -54,26 +54,26 @@ export const modules:BusinessModule[]=[
  {key:'status',label:'Disponibilidade',type:'select',options:['disponivel','em_rota','manutencao','inativo']},
  {key:'notes',label:'Observações',type:'textarea'}
 ]},
-{key:'water_sources',table:'water_sources',title:'Origens da água',singular:'Ponto de captação',description:'Rastreabilidade documental e autorizações.',icon:'◈',readRoles:all,writeRoles:ops,fields:[
+{key:'water_sources',table:'water_sources',title:'Origens da água',singular:'Ponto de captação',description:'Rastreabilidade documental e autorizações.',icon:'◈',readRoles:[...all,'viewer_ops_finance'],writeRoles:ops,fields:[
  {key:'name',label:'Ponto / fornecedor',required:true},{key:'address',label:'Localização'},
  {key:'authorization_ref',label:'Autorização / licença'},{key:'authorization_expires',label:'Vencimento',type:'date'},
  {key:'approved_for_potable',label:'Autorizada para distribuição potável (validar documentação)',type:'checkbox'},
  {key:'status',label:'Situação',type:'select',options:['pendente','aprovada','suspensa']},
  {key:'notes',label:'Ensaios, documentos, condições',type:'textarea'}
 ]},
-{key:'receivables',table:'receivables',title:'Contas a receber',singular:'Recebível',description:'Faturamento previsto, cobrança e baixas manuais.',icon:'↗',readRoles:money,writeRoles:money,fields:[
+{key:'receivables',table:'receivables',title:'Contas a receber',singular:'Recebível',description:'Faturamento previsto, cobrança e baixas manuais.',icon:'↗',readRoles:[...money,'viewer_ops_finance'],writeRoles:money,fields:[
  {key:'client_id',label:'Cliente',type:'ref',ref:'clients'},{key:'order_id',label:'Ordem de serviço',type:'ref',ref:'orders'},
  {key:'description',label:'Descrição',required:true},{key:'due_on',label:'Vencimento',type:'date',required:true},
  {key:'amount',label:'Valor (R$)',type:'number',step:'0.01',required:true},
  {key:'paid_amount',label:'Recebido (R$)',type:'number',step:'0.01'},
  {key:'status',label:'Situação',type:'select',options:['aberto','parcial','pago','cancelado']},{key:'notes',label:'Observações',type:'textarea'}
 ]},
-{key:'payables',table:'payables',title:'Contas a pagar',singular:'Conta a pagar',description:'Compromissos e obrigações.',icon:'↙',readRoles:money,writeRoles:money,fields:[
+{key:'payables',table:'payables',title:'Contas a pagar',singular:'Conta a pagar',description:'Compromissos e obrigações.',icon:'↙',readRoles:[...money,'viewer_ops_finance'],writeRoles:money,fields:[
  {key:'vendor',label:'Fornecedor',required:true},{key:'category',label:'Categoria'},{key:'due_on',label:'Vencimento',type:'date',required:true},
  {key:'amount',label:'Valor (R$)',type:'number',step:'0.01',required:true},{key:'paid_amount',label:'Pago (R$)',type:'number',step:'0.01'},
  {key:'status',label:'Situação',type:'select',options:['aberto','parcial','pago','cancelado']},{key:'notes',label:'Observações',type:'textarea'}
 ]},
-{key:'expenses',table:'expenses',title:'Custos operacionais',singular:'Despesa',description:'Combustível, viagens, manutenção e custos.',icon:'≋',readRoles:money,writeRoles:money,fields:[
+{key:'expenses',table:'expenses',title:'Custos operacionais',singular:'Despesa',description:'Combustível, viagens, manutenção e custos.',icon:'≋',readRoles:[...money,'viewer_ops_finance'],writeRoles:money,fields:[
  {key:'description',label:'Descrição',required:true},{key:'category',label:'Categoria',type:'select',options:['combustivel','manutencao','pedagio','pessoal','administrativo','agua','outro']},
  {key:'vehicle_id',label:'Caminhão',type:'ref',ref:'vehicles'},{key:'incurred_on',label:'Data',type:'date'},
  {key:'amount',label:'Valor (R$)',type:'number',step:'0.01',required:true},{key:'notes',label:'Observações',type:'textarea'}
@@ -91,7 +91,7 @@ export const modules:BusinessModule[]=[
  {key:'status',label:'Situação',type:'select',options:['planejada','ativa','pausada','encerrada']},
  {key:'notes',label:'Objetivos e resultados',type:'textarea'}
 ]},
-{key:'dre',table:'orders',title:'DRE gerencial',singular:'Demonstrativo de resultado',description:'Receitas, custos, despesas e resultado por competência.',icon:'▥',readRoles:money,writeRoles:[],fields:[]}
+{key:'dre',table:'orders',title:'DRE gerencial',singular:'Demonstrativo de resultado',description:'Receitas, custos, despesas e resultado por competência.',icon:'▥',readRoles:[...money,'viewer_ops_finance'],writeRoles:[],fields:[]}
 ];
 export function getModule(key:string){return modules.find(m=>m.key===key)}
 export const REFS:{[key:string]:{table:string;label:string}}={
