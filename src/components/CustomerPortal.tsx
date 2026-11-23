@@ -12,20 +12,50 @@ export function CustomerPortal({name}:{name:string}){
  const [primaryAddress,setPrimaryAddress]=useState<Address|null>(null),[deliveryMode,setDeliveryMode]=useState<'cadastro'|'outro'>('cadastro'),[otherAddress,setOtherAddress]=useState<Address>(emptyAddress);
  const [volume,setVolume]=useState(''),[waterUse,setWaterUse]=useState(''),[notes,setNotes]=useState('');
  async function load(){
+  setError('');
   const {data:{user},error:authError}=await db.auth.getUser();
   if(authError||!user){setError('Faça login novamente para consultar seu endereço.');return}
-  const r=await Promise.all([
-   db.from('customer_requests').select('id,city,address,address_origin,quantity_m3,water_use,status,created_at').order('created_at',{ascending:false}).limit(100),
-   db.from('orders').select('id,status,address,city,quantity_m3,total,scheduled_at,delivered_at,created_at').order('created_at',{ascending:false}).limit(100),
-   db.from('payment_transactions').select('order_id,status,checkout_url').limit(100),
-   db.from('clients').select('postal_code,street,street_number,complement,neighborhood,city,state').eq('auth_user_id',user.id).maybeSingle(),
-   db.from('quotes').select('id,customer_request_id,status,quantity_m3,unit_price,freight_fee,total,valid_until,notes,created_at').not('customer_request_id','is',null).order('created_at',{ascending:false}).limit(100)
+  // O painel do cliente deve buscar apenas registros deste cliente,
+  // mesmo quando o mesmo login também possui ADM temporário.
+  const owner=await db.from('clients')
+   .select('id,postal_code,street,street_number,complement,neighborhood,city,state')
+   .eq('auth_user_id',user.id).maybeSingle();
+  if(owner.error||!owner.data){setError(owner.error?.message||'Cadastro do cliente não encontrado.');return}
+  const clientId=String(owner.data.id);
+  const [ownedRequests,ownedOrders]=await Promise.all([
+   db.from('customer_requests')
+    .select('id,city,address,address_origin,quantity_m3,water_use,status,created_at')
+    .eq('auth_user_id',user.id).eq('client_id',clientId)
+    .order('created_at',{ascending:false}).limit(100),
+   db.from('orders')
+    .select('id,status,address,city,quantity_m3,total,scheduled_at,delivered_at,created_at')
+    .eq('client_id',clientId).order('created_at',{ascending:false}).limit(100)
   ]);
-  const failure=r.find(v=>v.error);if(failure?.error){setError(failure.error.message);return}
-  setRequests((r[0].data||[]) as Row[]);setOrders((r[1].data||[]) as Row[]);
-  setPayments((r[2].data||[]) as Row[]);setQuotes((r[4].data||[]) as Row[]);
-  const dbAddress=(r[3].data||{}) as Record<string,unknown>;
-  const candidate:Address={...emptyAddress(),...Object.fromEntries(['postal_code','street','street_number','complement','neighborhood','city','state'].map(key=>[key,String(dbAddress[key]||'')]))};
+  if(ownedRequests.error||ownedOrders.error){
+   setError(ownedRequests.error?.message||ownedOrders.error?.message||'Erro ao carregar os pedidos');
+   return;
+  }
+  const requestRows=(ownedRequests.data||[]) as Row[];
+  const orderRows=(ownedOrders.data||[]) as Row[];
+  setRequests(requestRows);setOrders(orderRows);
+  const requestIds=requestRows.map(r=>String(r.id));
+  const orderIds=orderRows.map(o=>String(o.id));
+  const [myQuotes,myPayments]=await Promise.all([
+   requestIds.length?db.from('quotes')
+    .select('id,customer_request_id,status,quantity_m3,unit_price,freight_fee,total,valid_until,notes,created_at')
+    .eq('client_id',clientId).in('customer_request_id',requestIds)
+    .order('created_at',{ascending:false}).limit(100):Promise.resolve({data:[],error:null}),
+   orderIds.length?db.from('payment_transactions')
+    .select('order_id,status,checkout_url').in('order_id',orderIds)
+    .limit(100):Promise.resolve({data:[],error:null})
+  ]);
+  if(myQuotes.error||myPayments.error){setError(myQuotes.error?.message||myPayments.error?.message||'Erro na consulta');return}
+  setQuotes((myQuotes.data||[]) as Row[]);
+  setPayments((myPayments.data||[]) as Row[]);
+  const candidate:Address={...emptyAddress(),...Object.fromEntries(
+   ['postal_code','street','street_number','complement','neighborhood','city','state']
+   .map(key=>[key,String((owner.data as Record<string,unknown>)[key]||'')])
+  )};
   if(validAddress(candidate))setPrimaryAddress(candidate);
   else{setPrimaryAddress(null);setDeliveryMode('outro')}
  }
