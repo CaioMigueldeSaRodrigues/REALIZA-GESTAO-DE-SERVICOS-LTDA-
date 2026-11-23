@@ -12,6 +12,13 @@ const world=(lat:number,lon:number,zoom:number)=>{
 };
 const near=(lat:number,lon:number)=>Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=-34&&lat<=6&&lon>=-75&&lon<=-31;
 const key=(c:HeatCity)=>normalize(c.city)+'|'+normalize(c.state);
+const brazilStates:Record<string,string>={
+ AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',
+ ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',
+ MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',
+ RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',
+ RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'
+};
 const maxPins=16;
 
 export function CityHeatMap({cities,metric,onSelect}:{cities:HeatCity[];metric:'demands'|'volume';onSelect?:(city:string)=>void}){
@@ -50,7 +57,11 @@ export function CityHeatMap({cities,metric,onSelect}:{cities:HeatCity[];metric:'
       data=await res.json();
      }finally{clearTimeout(timeout)}
      const matches=(data.results||[]).filter(c=>c.country_code==='BR'&&near(c.latitude,c.longitude));
-     const exact=matches.find(c=>normalize(c.name)===normalize(city.city));
+     const exactMatches=matches.filter(c=>normalize(c.name)===normalize(city.city));
+     const expected=brazilStates[city.state.toUpperCase()]||city.state;
+     const matchingState=expected?exactMatches.filter(c=>normalize(c.admin1||'')===normalize(expected)):exactMatches;
+     // UF desconhecida + localidades homônimas: não posicionar no município errado.
+     const exact=matchingState.length===1?matchingState[0]:undefined;
      if(exact)results.push({...city,lat:exact.latitude,lon:exact.longitude});
     }catch{/* Cidade permanece no ranking se geocodificação indisponível. */}
    }
