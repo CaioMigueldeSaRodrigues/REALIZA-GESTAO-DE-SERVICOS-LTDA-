@@ -161,3 +161,26 @@
 .demo-flow-step small{overflow-wrap:anywhere}
 .customer-grid .customer-entry button{margin-top:7px;max-width:100%}
 @media(max-width:650px){.demo-workflow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Biblioteca RAG — mesma identidade visual do painel administrativo */
+.rag-upload-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.rag-upload-form label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#385f6d;font-weight:700;min-width:0}
+.rag-upload-form input,.rag-upload-form select{border:1px solid #dce8eb;border-radius:9px;background:white;
+ color:#1a3f50;font-size:13px;min-height:43px;padding:10px;width:100%;min-width:0}
+.rag-upload-actions{align-self:end}
+.rag-source-list{display:flex;flex-direction:column;gap:10px}
+.rag-source{display:flex;align-items:center;justify-content:space-between;gap:15px;
+ border:1px solid #dfebee;border-radius:11px;background:#fcfdfd;padding:14px}
+.rag-source>div:first-child{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.rag-source strong{font-size:13px;overflow-wrap:anywhere}
+.rag-source small{font-size:11px;color:#708995}
+.rag-source-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.rag-source-actions .btn{font-size:11px;min-height:35px;padding:7px 12px}
+.rag-citation{border-top:1px solid #e0e8eb;padding:8px 0;font-size:12px}
+.rag-citation summary{cursor:pointer;font-weight:600}
+.rag-citation blockquote{font-size:11px;line-height:1.6;white-space:pre-wrap;padding:9px;margin:6px 0;
+ background:#f3f8f9;border-left:3px solid #77adb8}
+.rag-citation a{font-size:11px;text-decoration:underline}
+.rag-warning{font-size:11px;color:#986329}
+@media(max-width:760px){.rag-upload-form{grid-template-columns:1fr}.rag-source{align-items:stretch;flex-direction:column}}
